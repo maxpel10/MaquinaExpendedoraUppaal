@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+int cospelesIngresados = 0;
+int stockGaseosa = 10;
+int stockCerveza = 10;
+int stockFernet = 10;
+int recolectados = 0;
+chan ingresa,cancela,reset,pideGaseosa,pideCerveza,pideFernet;</declaration>
+	<template>
+		<name>Cliente</name>
+		<location id="id0" x="-535" y="-34">
+		</location>
+		<init ref="id0"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-51" y="-51">cospelesIngresados&gt;=3</label>
+			<label kind="synchronisation" x="-51" y="-34">pideGaseosa!</label>
+			<nail x="-59" y="-340"/>
+			<nail x="-59" y="195"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-246" y="-51">cospelesIngresados&gt;=4</label>
+			<label kind="synchronisation" x="-221" y="-34">pideCerveza!</label>
+			<nail x="-255" y="-187"/>
+			<nail x="-255" y="85"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-433" y="-59">cospelesIngresados==5</label>
+			<label kind="synchronisation" x="-408" y="-42">pideFernet!</label>
+			<nail x="-442" y="-68"/>
+			<nail x="-442" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="-561" y="42">cancela!</label>
+			<nail x="-493" y="42"/>
+			<nail x="-569" y="42"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-595" y="-144">cospelesIngresados&lt;=5</label>
+			<label kind="synchronisation" x="-561" y="-127">ingresa!</label>
+			<label kind="assignment" x="-671" y="-161">cospelesIngresados = cospelesIngresados + 1</label>
+			<nail x="-569" y="-102"/>
+			<nail x="-493" y="-102"/>
+		</transition>
+	</template>
+	<template>
+		<name>Maquina</name>
+		<declaration>clock x;</declaration>
+		<location id="id1" x="-748" y="-34">
+		</location>
+		<location id="id2" x="-272" y="-34">
+			<label kind="invariant" x="-281" y="-17">x&lt;=10</label>
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="-867" y="-42">reset?</label>
+			<nail x="-816" y="-136"/>
+			<nail x="-816" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-603" y="-280">x==10 and cospelesIngresados&gt;=3</label>
+			<label kind="assignment" x="-586" y="-263">cospelesIngresados=0</label>
+			<nail x="-374" y="-238"/>
+			<nail x="-654" y="-238"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-195" y="-51">ingresa?</label>
+			<nail x="-204" y="-136"/>
+			<nail x="-204" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-510" y="-195">x&lt;10</label>
+			<label kind="synchronisation" x="-527" y="-178">cancela?</label>
+			<label kind="assignment" x="-569" y="-161">cospelesIngresados = 0</label>
+			<nail x="-374" y="-136"/>
+			<nail x="-501" y="-136"/>
+			<nail x="-612" y="-136"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-552" y="246">stockFernet &gt; 0</label>
+			<label kind="synchronisation" x="-544" y="263">pideFernet?</label>
+			<label kind="assignment" x="-595" y="280">stockFernet = stockFernet - 1,
+cospelesIngresados = 0,
+recolectados = recolectados + 5</label>
+			<nail x="-272" y="340"/>
+			<nail x="-510" y="340"/>
+			<nail x="-748" y="340"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-552" y="110">stockCerveza &gt; 0</label>
+			<label kind="synchronisation" x="-544" y="127">pideCerveza?</label>
+			<label kind="assignment" x="-603" y="144">stockCerveza = stockCerveza - 1,
+cospelesIngresados = 0,
+recolectados = recolectados + 4</label>
+			<nail x="-374" y="204"/>
+			<nail x="-510" y="204"/>
+			<nail x="-646" y="204"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-544" y="8">stockGaseosa &gt; 0</label>
+			<label kind="synchronisation" x="-544" y="25">pideGaseosa?</label>
+			<label kind="assignment" x="-612" y="42">stockGaseosa = stockGaseosa - 1,
+cospelesIngresados = 0,
+recolectados = recolectados + 3</label>
+			<nail x="-374" y="102"/>
+			<nail x="-510" y="102"/>
+			<nail x="-612" y="102"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-527" y="-68">ingresa?</label>
+			<label kind="assignment" x="-510" y="-51">x=0</label>
+		</transition>
+	</template>
+	<template>
+		<name>Auditor</name>
+		<location id="id3" x="0" y="0">
+		</location>
+		<init ref="id3"/>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-8" y="-204">reset!</label>
+			<label kind="assignment" x="-51" y="-187">stockGaseosa = 10,
+stockCerveza = 10,
+stockFernet = 10,
+recolectados = 0</label>
+			<nail x="-102" y="-102"/>
+			<nail x="102" y="-102"/>
+		</transition>
+	</template>
+	<system>system Maquina, Cliente,Auditor;
+    </system>
+	<queries>
+		<query>
+			<formula>A[] stockGaseosa &lt;= 10 and stockGaseosa &gt;=0</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[] stockFernet &lt;= 10 and stockFernet &gt;=0</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[] stockCerveza &lt;= 10 and stockCerveza &gt;=0</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; recolectados == 120</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[] not deadlock</formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>
