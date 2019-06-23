@@ -1,26 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
-	<declaration>// Place global declarations here.
+	<declaration>//cantidad de cospeles que el usuario actual ha ingresado en la máquina. 
+//Parte de estos cospeles (la cantidad depende de la bebida seleccionada) pasan a ser propiedad de 
+//la máquina una vez que se realiza la venta, antes no. Si no se concreta la venta, esta variable 
+//se vuelve a 0.
 int cospelesIngresados = 0;
-int stockGaseosa = 10;
-int stockCerveza = 10;
-int stockFernet = 10;
+
+
+//cantidad de cospeles que se han recolectado debido a la ventas transcurridas entre la última vez
+//que el auditor se llevó la recolección y la actualidad.
 int recolectados = 0;
+
+//cantidad de unidades de gaseosa que tiene actualmente la máquina.
+int stockGaseosa = 10;
+
+//cantidad de unidades de cerveza que tiene actualmente la máquina.
+int stockCerveza = 10;
+
+//cantidad de unidades de gaseosa que tiene actualmente la máquina.
+int stockFernet = 10;
+
+//cantidad de gaseosas vendidas desde la última vez que se repuso stock.
 int ventaGaseosa = 0;
+
+//cantidad de cervezas vendidas desde la última vez que se repuso stock.
 int ventaCerveza = 0;
+
+//cantidad de fernet vendidos desde la última vez que se repuso stock.
 int ventaFernet = 0;
+
+//constante que indica cuanto es el máximo tiempo que la máquina espera antes de realizar 
+//la cancelación automática de la operación.
+int tiempoAgotado = 10;
+
+//ingresa: sincroniza entre usuario y máquina la inserción de un cospel
+//cancela: sincroniza entre usuario y máquina la cancelación de la operación.
+//reset: sincroniza entre auditor y máquina el evento de la llegada del auditor.
+//pideGaseosa: sincroniza entre el usuario y la máquina el pedido de una gaseosa.
+//pide Cerveza: sincroniza entre el usuario y la máquina el pedido de una cerveza.
+//pideFernet: sincroniza entre el usuario y la máquina el pedido de un fernet.
 chan ingresa,cancela,reset,pideGaseosa,pideCerveza,pideFernet;</declaration>
 	<template>
 		<name>Maquina</name>
-		<declaration>clock x;</declaration>
+		<declaration>//Sirve para controlar que el tiempo transcurrido desde la última acción que el usuario realizó
+//en la location Ocupada2.
+clock x;</declaration>
 		<location id="id0" x="-748" y="-34">
 			<name x="-758" y="-68">Libre</name>
 			<urgent/>
 		</location>
 		<location id="id1" x="-272" y="-34">
 			<name x="-297" y="0">Ocupada2</name>
-			<label kind="invariant" x="-289" y="-17">x&lt;=10</label>
+			<label kind="invariant" x="-289" y="-17">x&lt;=tiempoAgotado</label>
 		</location>
 		<location id="id2" x="-510" y="-136">
 			<name x="-544" y="-127">Ocupada1</name>
@@ -61,7 +93,7 @@ or stockFernet &gt; 0</label>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id1"/>
-			<label kind="guard" x="-153" y="-68">x&lt;10</label>
+			<label kind="guard" x="-153" y="-68">x&lt;tiempoAgotado</label>
 			<label kind="synchronisation" x="-161" y="-51">ingresa?</label>
 			<label kind="assignment" x="-144" y="-34">x=0</label>
 			<nail x="-170" y="-136"/>
@@ -78,7 +110,7 @@ or stockFernet &gt; 0</label>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-603" y="-382">x==10 and cospelesIngresados&gt;=3</label>
+			<label kind="guard" x="-646" y="-382">x==tiempoAgotado and cospelesIngresados&gt;=3</label>
 			<label kind="assignment" x="-586" y="-365">cospelesIngresados=0, x=0</label>
 			<nail x="-272" y="-340"/>
 			<nail x="-748" y="-340"/>
@@ -96,7 +128,7 @@ or stockFernet &gt; 0</label>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-586" y="314">x &lt; 10 and stockFernet &gt; 0</label>
+			<label kind="guard" x="-629" y="314">x &lt; tiempoAgotado and stockFernet &gt; 0</label>
 			<label kind="synchronisation" x="-552" y="331">pideFernet?</label>
 			<label kind="assignment" x="-552" y="348">stockFernet--,
 ventaFernet++,
@@ -110,7 +142,7 @@ x=0</label>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-586" y="170">x &lt; 10 and stockCerveza &gt; 0</label>
+			<label kind="guard" x="-620" y="170">x &lt; tiempoAgotado and stockCerveza &gt; 0</label>
 			<label kind="synchronisation" x="-544" y="187">pideCerveza?</label>
 			<label kind="assignment" x="-544" y="204">stockCerveza--,
 ventaCerveza++,
@@ -124,7 +156,7 @@ x=0</label>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-578" y="0">x &lt; 10 and stockGaseosa &gt; 0</label>
+			<label kind="guard" x="-620" y="0">x &lt; tiempoAgotado and stockGaseosa &gt; 0</label>
 			<label kind="synchronisation" x="-544" y="17">pideGaseosa?</label>
 			<label kind="assignment" x="-552" y="34">stockGaseosa--,
 ventaGaseosa++,
@@ -190,8 +222,8 @@ x=0</label>
 		<transition>
 			<source ref="id4"/>
 			<target ref="id4"/>
-			<label kind="synchronisation" x="-8" y="-263">reset!</label>
-			<label kind="assignment" x="-42" y="-238">stockGaseosa = 10,
+			<label kind="synchronisation" x="-25" y="-255">reset!</label>
+			<label kind="assignment" x="-59" y="-238">stockGaseosa = 10,
 stockCerveza = 10,
 stockFernet = 10,
 recolectados = 0,
@@ -206,60 +238,84 @@ ventaFernet =0</label>
     </system>
 	<queries>
 		<query>
-			<formula>A[] stockGaseosa &lt;= 10 and stockGaseosa &gt;=0</formula>
-			<comment></comment>
+			<formula>A[] (stockGaseosa &lt;= 10 and stockGaseosa &gt;=0 and stockFernet &lt;= 10 and stockFernet &gt;=0 and stockCerveza &lt;= 10 and stockCerveza &gt;=0)</formula>
+			<comment>Esta pregunta verifica seguridad. Debido a que determinamos que el maximo stock de cualquier bebida es de 10 unidades, se intenta
+verificar que en todas las ejecuciones, no se de el caso de que el stock supere la cantidad maxima ni que se vaya debajo de la
+cantidad minima, que es 0.</comment>
 		</query>
 		<query>
-			<formula>A[] stockFernet &lt;= 10 and stockFernet &gt;=0</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula>A[] stockCerveza &lt;= 10 and stockCerveza &gt;=0</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula>A[] cospelesIngresados==3 imply Maquina.x&lt;10</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt; cospelesIngresados==3 imply Maquina.x==10</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula>A[] cospelesIngresados &lt;=5</formula>
-			<comment></comment>
+			<formula>A[] cospelesIngresados &lt;= 5</formula>
+			<comment>Una de las restricciones de la realidad es que la maxima cantidad de cospeles que el usuario puede ingresar corresponde a la cantidad de cospeles necesarios para adquirir la bebida mas cara, que vale 5 cospeles.
+Por lo tanto con esta pregunta se está intentado verificar tal restricción. Se busca que para todas las ejecuciones posibles, la cantidad de cospeles ingresados por un usuario no supere la cantidad de 5.</comment>
 		</query>
 		<query>
 			<formula>E&lt;&gt; recolectados == 120</formula>
-			<comment></comment>
+			<comment>Con esta consulta se verifica que en alguna ejecucion del modelo, se alcanza a recaudar la maxima cantidad de cospeles posible.</comment>
 		</query>
 		<query>
-			<formula>A[] recolectados &gt;= 0</formula>
-			<comment></comment>
+			<formula>A[] recolectados &gt;= 0 and recolectados &lt;= 120</formula>
+			<comment>Teniendo en cuenta el valor de cada bebida y que el stock maximo es de 10 unidades por cada una, la máxima recaudacion que 
+se puede obtener es de 120 cospeles. Ademas nunca la recaudadación nunca puede ser menor que cero. Esto es lo que verifica esta
+consulta.</comment>
 		</query>
 		<query>
-			<formula>A[] Maquina.x &lt;= 10</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula>E&lt;&gt; stockGaseosa==0</formula>
-			<comment></comment>
+			<formula>A[] Maquina.x &lt;= tiempoAgotado</formula>
+			<comment>En esta consulta se chequea seguridad. Por la disposicion del modelo, el reloj siempre se debe resetear al momento del que el 
+tiempo de espera se agota o antes, y por lo tanto, que el reloj alcance valores mayores significaria que hay una falta de 
+actualizacion del valor del reloj en alguna transicion.</comment>
 		</query>
 		<query>
 			<formula>E&lt;&gt; (stockGaseosa==0 and stockCerveza ==0 and stockFernet==0)</formula>
-			<comment></comment>
+			<comment>Esta consulta chequea alcanzabilidad. En particular, se esta preguntando si en algun momento de la ejecucion se acaba el stock
+de todas las bebidas.</comment>
 		</query>
 		<query>
 			<formula>(stockGaseosa==0 and stockCerveza ==0 and stockFernet==0) --&gt; (stockGaseosa&gt;0 and stockCerveza&gt;0 and stockFernet&gt;0)</formula>
-			<comment></comment>
+			<comment>Esta consulta verifica si cualquier camino que empieza en un estado en el que no hay stock de ninguno de los tres tipos de bebidas,
+alcanza un estado en el que hay stock de todas las bebidas. Es decir, siempre se repone el stock mediante el auditor.</comment>
 		</query>
 		<query>
-			<formula>A&lt;&gt; stockGaseosa==0 imply stockGaseosa&gt;0</formula>
-			<comment></comment>
+			<formula>Maquina.Libre --&gt; Maquina.Ocupada1</formula>
+			<comment>Se intenta chequear si la máquina está libre, siempre puede pasar a un estado ocupado. Es decir, nunca está libre indefinidamente.</comment>
+		</query>
+		<query>
+			<formula>Maquina.Ocupada1 --&gt; Maquina.Libre</formula>
+			<comment>Se intenta chequear que siempre que se ingresaron entre 1 y 2 cospeles, la máquina se liberó en algún momento.</comment>
+		</query>
+		<query>
+			<formula>Maquina.Ocupada2 --&gt; Maquina.Libre</formula>
+			<comment>Se intenta chequear que siempre que se ingresaron más de 3 cospeles, la máquina se liberó en algún momento.</comment>
+		</query>
+		<query>
+			<formula>A[] Maquina.Ocupada2 imply (cospelesIngresados&gt;=3 and cospelesIngresados&lt;=5)</formula>
+			<comment>Es similar a la consulta siguiente pero con la location Ocupada2. Esto tiene que ser verdadero por cómo se penso la solución.</comment>
+		</query>
+		<query>
+			<formula>A[] Maquina.Ocupada1 imply (cospelesIngresados==1 or cospelesIngresados==2)</formula>
+			<comment>Está consulta chequea seguridad. Se intenta ver que siempre que se la máquina esta en la location Ocupada1, 
+hay 1 o 2 cospeles ingresados. Esto debe ser verdadero por como se pensó la solución.</comment>
+		</query>
+		<query>
+			<formula>A[] Maquina.Libre imply cospelesIngresados == 0</formula>
+			<comment>Esta consulta chequea seguridad. Se intenta ver que si la máquina está Libre, no haya quedado ningún cospel ingresado de alguna 
+operación anterior.</comment>
+		</query>
+		<query>
+			<formula>A[] Maquina.x == tiempoAgotado imply cospelesIngresados&gt;=3</formula>
+			<comment>Esta consulta chequea seguridad. Se intenta ver que si para todas las ejecuciones el tiempo de espera se llega a agotar únicamente
+ cuando hay 3 o más cospeles ingresados. Está consulta esta relacionada con que cuando hay 1 o 2 cospeles en la máquina no hay 
+restricción temporal.</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; Maquina.x == tiempoAgotado and cospelesIngresados&gt;=3</formula>
+			<comment>Esta consulta chequea principalmente alcanzabilidad. Lo que intenta ver es que si en algún momento de la ejecución se ejecuta 
+la transición que cancela la operación porque agotó el tiempo de espera.</comment>
 		</query>
 		<query>
 			<formula>A[] not deadlock</formula>
-			<comment></comment>
+			<comment>Con esta consulta, se esta chequeando que en todos los posibles estados del sistema, siempre va a haber una transición habilitada
+para dispararse. Es decir, que siempre que se está en un estado es posible evolucionar a un estado sucesor (que puede ser el mismo
+estado). </comment>
 		</query>
 	</queries>
 </nta>
