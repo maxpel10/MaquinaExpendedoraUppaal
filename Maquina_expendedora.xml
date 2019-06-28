@@ -40,7 +40,40 @@ int tiempoAgotado = 10;
 //pideGaseosa: sincroniza entre el usuario y la máquina el pedido de una gaseosa.
 //pide Cerveza: sincroniza entre el usuario y la máquina el pedido de una cerveza.
 //pideFernet: sincroniza entre el usuario y la máquina el pedido de un fernet.
-chan ingresa,cancela,reset,pideGaseosa,pideCerveza,pideFernet;</declaration>
+chan ingresa,cancela,reset,pideGaseosa,pideCerveza,pideFernet;
+
+
+int idBebida;
+
+typedef struct{
+    int id;
+    
+    int valor; 
+    int stock;
+}Bebida;
+
+const int N = 3;
+Bebida bebidas[N] = {{0,3,10},{1,4,10},{2,5,10}};
+
+bool hayStockDe(int id){
+    return bebidas[id].stock&gt;0;
+}
+
+bool hayStock(){
+    int i;
+    for (i=0;i&lt;N;i++){
+        if(hayStockDe(i)){
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+
+
+</declaration>
 	<template>
 		<name>Maquina</name>
 		<declaration>//Sirve para controlar que el tiempo transcurrido desde la última acción que el usuario realizó
@@ -54,41 +87,12 @@ clock x;</declaration>
 			<name x="-297" y="0">Ocupada2</name>
 			<label kind="invariant" x="-289" y="-17">x&lt;=tiempoAgotado</label>
 		</location>
-		<location id="id2" x="-510" y="-136">
-			<name x="-544" y="-127">Ocupada1</name>
-			<urgent/>
-		</location>
 		<init ref="id0"/>
 		<transition>
-			<source ref="id2"/>
-			<target ref="id1"/>
-			<label kind="guard" x="-476" y="-76">cospelesIngresados==2</label>
-			<label kind="synchronisation" x="-433" y="-59">ingresa?</label>
-			<nail x="-476" y="-34"/>
-		</transition>
-		<transition>
-			<source ref="id2"/>
-			<target ref="id2"/>
-			<label kind="guard" x="-578" y="-246">cospelesIngresados&lt;2</label>
-			<label kind="synchronisation" x="-535" y="-229">ingresa?</label>
-			<nail x="-578" y="-204"/>
-			<nail x="-442" y="-204"/>
-		</transition>
-		<transition>
-			<source ref="id2"/>
-			<target ref="id0"/>
-			<label kind="synchronisation" x="-680" y="-34">cancela?</label>
-			<label kind="assignment" x="-714" y="-17">cospelesIngresados=0</label>
-			<nail x="-612" y="-34"/>
-		</transition>
-		<transition>
 			<source ref="id0"/>
-			<target ref="id2"/>
-			<label kind="guard" x="-688" y="-204">stockGaseosa&gt;0 
-or stockCerveza &gt; 0 
-or stockFernet &gt; 0</label>
-			<label kind="synchronisation" x="-663" y="-153">ingresa?</label>
-			<nail x="-646" y="-136"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-535" y="-76">hayStock()</label>
+			<label kind="synchronisation" x="-535" y="-59">ingresa?</label>
 		</transition>
 		<transition>
 			<source ref="id1"/>
@@ -110,7 +114,7 @@ or stockFernet &gt; 0</label>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-646" y="-382">x==tiempoAgotado and cospelesIngresados&gt;=3</label>
+			<label kind="guard" x="-569" y="-382">x==tiempoAgotado</label>
 			<label kind="assignment" x="-586" y="-365">cospelesIngresados=0, x=0</label>
 			<nail x="-272" y="-340"/>
 			<nail x="-748" y="-340"/>
@@ -124,34 +128,6 @@ or stockFernet &gt; 0</label>
 			<nail x="-374" y="-272"/>
 			<nail x="-510" y="-272"/>
 			<nail x="-646" y="-272"/>
-		</transition>
-		<transition>
-			<source ref="id1"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-629" y="314">x &lt; tiempoAgotado and stockFernet &gt; 0</label>
-			<label kind="synchronisation" x="-552" y="331">pideFernet?</label>
-			<label kind="assignment" x="-552" y="348">stockFernet--,
-ventaFernet++,
-cospelesIngresados = 0,
-recolectados+=5,
-x=0</label>
-			<nail x="-272" y="442"/>
-			<nail x="-510" y="442"/>
-			<nail x="-748" y="442"/>
-		</transition>
-		<transition>
-			<source ref="id1"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-620" y="170">x &lt; tiempoAgotado and stockCerveza &gt; 0</label>
-			<label kind="synchronisation" x="-544" y="187">pideCerveza?</label>
-			<label kind="assignment" x="-544" y="204">stockCerveza--,
-ventaCerveza++,
-cospelesIngresados = 0,
-recolectados+=4,
-x=0</label>
-			<nail x="-374" y="306"/>
-			<nail x="-510" y="306"/>
-			<nail x="-646" y="306"/>
 		</transition>
 		<transition>
 			<source ref="id1"/>
@@ -170,43 +146,44 @@ x=0</label>
 	</template>
 	<template>
 		<name>Usuario</name>
-		<location id="id3" x="-535" y="-34">
+		<location id="id2" x="-535" y="-34">
 		</location>
-		<init ref="id3"/>
+		<init ref="id2"/>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id3"/>
+			<source ref="id2"/>
+			<target ref="id2"/>
 			<label kind="guard" x="-51" y="-51">cospelesIngresados&gt;=3</label>
 			<label kind="synchronisation" x="-51" y="-34">pideGaseosa!</label>
 			<nail x="-59" y="-340"/>
 			<nail x="-59" y="195"/>
 		</transition>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id3"/>
+			<source ref="id2"/>
+			<target ref="id2"/>
 			<label kind="guard" x="-246" y="-51">cospelesIngresados&gt;=4</label>
 			<label kind="synchronisation" x="-221" y="-34">pideCerveza!</label>
 			<nail x="-255" y="-187"/>
 			<nail x="-255" y="85"/>
 		</transition>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id3"/>
+			<source ref="id2"/>
+			<target ref="id2"/>
 			<label kind="guard" x="-433" y="-59">cospelesIngresados==5</label>
 			<label kind="synchronisation" x="-408" y="-42">pideFernet!</label>
+			<label kind="assignment" x="-408" y="-25">idBebida=2</label>
 			<nail x="-442" y="-68"/>
 			<nail x="-442" y="0"/>
 		</transition>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id3"/>
+			<source ref="id2"/>
+			<target ref="id2"/>
 			<label kind="synchronisation" x="-561" y="42">cancela!</label>
 			<nail x="-493" y="42"/>
 			<nail x="-569" y="42"/>
 		</transition>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id3"/>
+			<source ref="id2"/>
+			<target ref="id2"/>
 			<label kind="guard" x="-603" y="-161">cospelesIngresados&lt;5</label>
 			<label kind="synchronisation" x="-561" y="-144">ingresa!</label>
 			<label kind="assignment" x="-595" y="-127">cospelesIngresados++</label>
@@ -216,12 +193,12 @@ x=0</label>
 	</template>
 	<template>
 		<name>Auditor</name>
-		<location id="id4" x="0" y="0">
+		<location id="id3" x="0" y="0">
 		</location>
-		<init ref="id4"/>
+		<init ref="id3"/>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id4"/>
+			<source ref="id3"/>
+			<target ref="id3"/>
 			<label kind="synchronisation" x="-25" y="-255">reset!</label>
 			<label kind="assignment" x="-59" y="-238">stockGaseosa = 10,
 stockCerveza = 10,
