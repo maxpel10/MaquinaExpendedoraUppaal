@@ -1,64 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
-	<declaration>//cantidad de cospeles que el usuario actual ha ingresado en la máquina. 
-//Parte de estos cospeles (la cantidad depende de la bebida seleccionada) pasan a ser propiedad de 
-//la máquina una vez que se realiza la venta, antes no. Si no se concreta la venta, esta variable 
-//se vuelve a 0.
-int cospelesIngresados = 0;
+	<declaration>/**Constantes**/
+//Tiempo maximo que espera la maquina expendedora antes de cancelar la operacion
+const int tiempoAgotado = 10;
 
+//constante que indica el stock maximo de todas las botella
+const int STOCK = 10;
 
-//cantidad de cospeles que se han recolectado debido a la ventas transcurridas entre la última vez
-//que el auditor se llevó la recolección y la actualidad.
-int recolectados = 0;
+//constante que indica la capacidad maxima de almacenamiento de cospeles de la maquina
+const int CAPACIDAD_ALCANCIA = 300;
 
-//cantidad de unidades de gaseosa que tiene actualmente la máquina.
-int stockGaseosa = 10;
+//cosntante que indida la cantidad de bebidas distintas que contiene la maquina expendedora
+const int N = 3;
 
-//cantidad de unidades de cerveza que tiene actualmente la máquina.
-int stockCerveza = 10;
-
-//cantidad de unidades de gaseosa que tiene actualmente la máquina.
-int stockFernet = 10;
-
-//cantidad de gaseosas vendidas desde la última vez que se repuso stock.
-int ventaGaseosa = 0;
-
-//cantidad de cervezas vendidas desde la última vez que se repuso stock.
-int ventaCerveza = 0;
-
-//cantidad de fernet vendidos desde la última vez que se repuso stock.
-int ventaFernet = 0;
-
-//constante que indica cuanto es el máximo tiempo que la máquina espera antes de realizar 
-//la cancelación automática de la operación.
-int tiempoAgotado = 10;
-
-//ingresa: sincroniza entre usuario y máquina la inserción de un cospel
-//cancela: sincroniza entre usuario y máquina la cancelación de la operación.
-//reset: sincroniza entre auditor y máquina el evento de la llegada del auditor.
-//pideGaseosa: sincroniza entre el usuario y la máquina el pedido de una gaseosa.
-//pide Cerveza: sincroniza entre el usuario y la máquina el pedido de una cerveza.
-//pideFernet: sincroniza entre el usuario y la máquina el pedido de un fernet.
-chan ingresa,cancela,reset,pideGaseosa,pideCerveza,pideFernet;
-
-
-int idBebida;
-
+/**Estructuras**/
 typedef struct{
-    int id;
-    
-    int valor; 
-    int stock;
+    int id;      // Identidicador de bebidas
+    int valor;   // Precio de la botella
+    int stock;   // Cantidad de botellas disponibles
+    int vendidos; // Cantidad de botellas vendidas desde la ultima reposicion
 }Bebida;
 
-const int N = 3;
-Bebida bebidas[N] = {{0,3,10},{1,4,10},{2,5,10}};
+/**Variables globales**/
+Bebida bebidas[N] = {{0,3,STOCK,0},{1,4,STOCK,0},{2,5,STOCK,0}};
 
+/**Variables globales enteras**/
+//cantidad de cospeles que el usuario actual ha ingresado en la máquina. 
+int cospelesIngresados = 0;
+
+//cantidad de cospeles que se han recolectado la última recoleccion de ganancias
+int recolectados = 0;
+
+//id de la bebida de interes para alguna operacion
+int idBebida;
+
+/**Canales**/
+
+// sincroniza entre usuario y máquina la inserción de un cospel
+chan ingresa;
+
+//sincroniza entre usuario y máquina la cancelación de la operación.
+chan cancela;
+
+//sincroniza entre auditor y máquina el evento de la llegada del auditor para recolectar la recaudacion.
+chan sacarRecaudacion;
+
+//sincroniza entre auditor y máquina el evento de la llegada del auditor para reponer el stock.
+chan reponerStock;
+
+//sincroniza entre el usuario y la máquina el pedido de una bebida.
+chan pide;
+
+//sincroniza entre el usuario y la máquina en caso que no se efectue la compra.
+chan vuelve;
+
+//sincroniza entre el usuario y la máquina en caso que se efectue la compra.
+chan compra;
+
+</declaration>
+	<template>
+		<name>Maquina</name>
+		<declaration>//Tiempo que la maquina expendedora lleva esperando una accion luego del primer cospel ingresado
+clock x;
+
+//true si la bebida con id = id tiene stock disponible
 bool hayStockDe(int id){
     return bebidas[id].stock&gt;0;
 }
 
+//true si todas las bebidas tienen stock disponible
 bool hayStock(){
     int i;
     for (i=0;i&lt;N;i++){
@@ -69,47 +80,111 @@ bool hayStock(){
     return false;
 }
 
+//true si la cantidad de cospeles ingresados es suficiente para realizar la compra
+bool cubrePrecio(int id){
+    return cospelesIngresados &gt;= bebidas[id].valor;
+}
+
+// Actualiza stock y cantidad de cospeles recolectados
+void consumir(int id){
+    bebidas[id].stock--;
+    bebidas[id].vendidos++;
+    recolectados +=  bebidas[id].valor;
+}
+
+//true si la cantidad de monedas recolectadass es igual a la cantidad maxima que puede almacenar la maquina
+bool alcanciaLlena(){
+    return recolectados==CAPACIDAD_ALCANCIA;
+}
 
 
-
+//true si la alcancia no esta llena y ademas existe al menos una bebida tiene menos stock maximo
+bool puedeReponer(){
+    if(alcanciaLlena()){
+        return false;
+    }
+    else{
+        int i;
+        for(i=0;i&lt;N;i++){
+            if(bebidas[i].stock&lt;STOCK){
+                return true;
+            }
+        }
+        return false;
+    }
+}
 
 </declaration>
-	<template>
-		<name>Maquina</name>
-		<declaration>//Sirve para controlar que el tiempo transcurrido desde la última acción que el usuario realizó
-//en la location Ocupada2.
-clock x;</declaration>
 		<location id="id0" x="-748" y="-34">
-			<name x="-758" y="-68">Libre</name>
+			<name x="-799" y="-42">Libre</name>
 			<urgent/>
 		</location>
 		<location id="id1" x="-272" y="-34">
-			<name x="-297" y="0">Ocupada2</name>
-			<label kind="invariant" x="-289" y="-17">x&lt;=tiempoAgotado</label>
+			<name x="-255" y="-42">Ocupada</name>
+			<label kind="invariant" x="-289" y="-25">x&lt;=tiempoAgotado</label>
+		</location>
+		<location id="id2" x="-544" y="136">
+			<name x="-578" y="144">Procesando</name>
+			<urgent/>
 		</location>
 		<init ref="id0"/>
 		<transition>
 			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-960" y="0">recolectados&gt;0</label>
+			<label kind="synchronisation" x="-986" y="17">sacarRecaudacion?</label>
+			<nail x="-850" y="68"/>
+			<nail x="-850" y="-25"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-960" y="-102">puedeReponer()</label>
+			<label kind="synchronisation" x="-952" y="-85">reponerStock?</label>
+			<nail x="-850" y="-144"/>
+			<nail x="-850" y="-42"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
 			<target ref="id1"/>
-			<label kind="guard" x="-535" y="-76">hayStock()</label>
+			<label kind="guard" x="-433" y="85">!hayStockDe(idBebida) or
+!cubrePrecio(idBebida)</label>
+			<label kind="synchronisation" x="-357" y="68">vuelve!</label>
+			<label kind="assignment" x="-365" y="119">x=0</label>
+			<nail x="-476" y="102"/>
+			<nail x="-306" y="34"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-765" y="85">hayStockDe(idBebida) and
+cubrePrecio(idBebida)</label>
+			<label kind="synchronisation" x="-705" y="68">compra!</label>
+			<label kind="assignment" x="-748" y="119">consumir(idBebida),
+cospelesIngresados=0,
+x=0</label>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-476" y="17">pide?</label>
+			<nail x="-340" y="0"/>
+			<nail x="-510" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-603" y="-76">hayStock() and !alcanciaLlena()</label>
 			<label kind="synchronisation" x="-535" y="-59">ingresa?</label>
 		</transition>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id1"/>
 			<label kind="guard" x="-153" y="-68">x&lt;tiempoAgotado</label>
-			<label kind="synchronisation" x="-161" y="-51">ingresa?</label>
-			<label kind="assignment" x="-144" y="-34">x=0</label>
+			<label kind="synchronisation" x="-119" y="-51">ingresa?</label>
+			<label kind="assignment" x="-110" y="-34">x=0</label>
 			<nail x="-170" y="-136"/>
 			<nail x="-170" y="68"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-960" y="-34">recolectados &gt; 0</label>
-			<label kind="synchronisation" x="-926" y="-17">reset?</label>
-			<nail x="-850" y="-136"/>
-			<nail x="-850" y="68"/>
 		</transition>
 		<transition>
 			<source ref="id1"/>
@@ -129,61 +204,65 @@ clock x;</declaration>
 			<nail x="-510" y="-272"/>
 			<nail x="-646" y="-272"/>
 		</transition>
-		<transition>
-			<source ref="id1"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-620" y="0">x &lt; tiempoAgotado and stockGaseosa &gt; 0</label>
-			<label kind="synchronisation" x="-544" y="17">pideGaseosa?</label>
-			<label kind="assignment" x="-552" y="34">stockGaseosa--,
-ventaGaseosa++,
-cospelesIngresados = 0,
-recolectados+=3,
-x=0</label>
-			<nail x="-408" y="136"/>
-			<nail x="-510" y="136"/>
-			<nail x="-612" y="136"/>
-		</transition>
 	</template>
 	<template>
 		<name>Usuario</name>
-		<location id="id2" x="-535" y="-34">
+		<location id="id3" x="-535" y="-34">
 		</location>
-		<init ref="id2"/>
+		<location id="id4" x="-136" y="-34">
+		</location>
+		<init ref="id3"/>
 		<transition>
-			<source ref="id2"/>
-			<target ref="id2"/>
-			<label kind="guard" x="-51" y="-51">cospelesIngresados&gt;=3</label>
-			<label kind="synchronisation" x="-51" y="-34">pideGaseosa!</label>
-			<nail x="-59" y="-340"/>
-			<nail x="-59" y="195"/>
+			<source ref="id4"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-399" y="119">compra?</label>
+			<nail x="-102" y="-34"/>
+			<nail x="-102" y="136"/>
+			<nail x="-646" y="136"/>
+			<nail x="-646" y="-34"/>
 		</transition>
 		<transition>
-			<source ref="id2"/>
-			<target ref="id2"/>
-			<label kind="guard" x="-246" y="-51">cospelesIngresados&gt;=4</label>
-			<label kind="synchronisation" x="-221" y="-34">pideCerveza!</label>
-			<nail x="-255" y="-187"/>
-			<nail x="-255" y="85"/>
+			<source ref="id4"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="-391" y="85">vuelve?</label>
+			<nail x="-136" y="102"/>
+			<nail x="-612" y="102"/>
+			<nail x="-612" y="-34"/>
 		</transition>
 		<transition>
-			<source ref="id2"/>
-			<target ref="id2"/>
-			<label kind="guard" x="-433" y="-59">cospelesIngresados==5</label>
-			<label kind="synchronisation" x="-408" y="-42">pideFernet!</label>
-			<label kind="assignment" x="-408" y="-25">idBebida=2</label>
-			<nail x="-442" y="-68"/>
-			<nail x="-442" y="0"/>
+			<source ref="id3"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-365" y="17">pide!</label>
+			<label kind="assignment" x="-382" y="0">idBebida = 2</label>
+			<nail x="-442" y="34"/>
+			<nail x="-238" y="34"/>
 		</transition>
 		<transition>
-			<source ref="id2"/>
-			<target ref="id2"/>
+			<source ref="id3"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-365" y="-51">pide!</label>
+			<label kind="assignment" x="-382" y="-68">idBebida = 1</label>
+			<nail x="-442" y="-34"/>
+			<nail x="-238" y="-34"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-365" y="-119">pide!</label>
+			<label kind="assignment" x="-391" y="-136">idBebida = 0</label>
+			<nail x="-442" y="-102"/>
+			<nail x="-238" y="-102"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
 			<label kind="synchronisation" x="-561" y="42">cancela!</label>
 			<nail x="-493" y="42"/>
 			<nail x="-569" y="42"/>
 		</transition>
 		<transition>
-			<source ref="id2"/>
-			<target ref="id2"/>
+			<source ref="id3"/>
+			<target ref="id3"/>
 			<label kind="guard" x="-603" y="-161">cospelesIngresados&lt;5</label>
 			<label kind="synchronisation" x="-561" y="-144">ingresa!</label>
 			<label kind="assignment" x="-595" y="-127">cospelesIngresados++</label>
@@ -193,29 +272,39 @@ x=0</label>
 	</template>
 	<template>
 		<name>Auditor</name>
-		<location id="id3" x="0" y="0">
+		<declaration>//Repone las botellas vendidas
+void reponer(){
+    int i;
+    for (i=0;i&lt;N;i++){
+        bebidas[i].stock = STOCK;
+        bebidas[i].vendidos = 0;
+    }
+}
+</declaration>
+		<location id="id5" x="0" y="0">
 		</location>
-		<init ref="id3"/>
+		<init ref="id5"/>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id3"/>
-			<label kind="synchronisation" x="-25" y="-255">reset!</label>
-			<label kind="assignment" x="-59" y="-238">stockGaseosa = 10,
-stockCerveza = 10,
-stockFernet = 10,
-recolectados = 0,
-ventaGaseosa = 0,
-ventaCerveza = 0,
-ventaFernet =0</label>
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-68" y="136">sacarRecaudacion!</label>
+			<label kind="assignment" x="-51" y="153">recolectados = 0</label>
+			<nail x="93" y="127"/>
+			<nail x="-93" y="127"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-42" y="-144">reponerStock!</label>
+			<label kind="assignment" x="-34" y="-127">reponer()</label>
 			<nail x="-102" y="-102"/>
 			<nail x="102" y="-102"/>
 		</transition>
 	</template>
-	<system>system Maquina,Usuario,Auditor;
-    </system>
+	<system>system Maquina,Usuario,Auditor;</system>
 	<queries>
 		<query>
-			<formula>A[] (stockGaseosa &lt;= 10 and stockGaseosa &gt;=0 and stockFernet &lt;= 10 and stockFernet &gt;=0 and stockCerveza &lt;= 10 and stockCerveza &gt;=0)</formula>
+			<formula>A[] (bebidas[0].stock&lt;=10 and bebidas[0].stock&gt;=0)</formula>
 			<comment>Esta pregunta verifica seguridad. Debido a que determinamos que el maximo stock de cualquier bebida es de 10 unidades, se intenta
 verificar que en todas las ejecuciones, no se de el caso de que el stock supere la cantidad maxima ni que se vaya debajo de la
 cantidad minima, que es 0.</comment>
@@ -226,7 +315,7 @@ cantidad minima, que es 0.</comment>
 Por lo tanto con esta pregunta se está intentado verificar tal restricción. Se busca que para todas las ejecuciones posibles, la cantidad de cospeles ingresados por un usuario no supere la cantidad de 5.</comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; recolectados == 120</formula>
+			<formula>E&lt;&gt; recolectados == CAPACIDAD_ALCANCIA</formula>
 			<comment>Con esta consulta se verifica que en alguna ejecucion del modelo, se alcanza a recaudar la maxima cantidad de cospeles posible.</comment>
 		</query>
 		<query>
