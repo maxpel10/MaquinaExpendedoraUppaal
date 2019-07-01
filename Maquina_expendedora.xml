@@ -8,8 +8,8 @@ const int tiempoAgotado = 10;
 //constante que indica el stock maximo de todas las botella
 const int STOCK = 10;
 
-//constante que indica la capacidad maxima de almacenamiento de cospeles de la maquina
-const int CAPACIDAD_ALCANCIA = 300;
+//constante que indica la capacidad maxima -4 de almacenamiento de cospeles de la maquina
+const int CAPACIDAD_ALCANCIA = 296;
 
 //cosntante que indida la cantidad de bebidas distintas que contiene la maquina expendedora
 const int N = 3;
@@ -94,7 +94,7 @@ void consumir(int id){
 
 //true si la cantidad de monedas recolectadass es igual a la cantidad maxima que puede almacenar la maquina
 bool alcanciaLlena(){
-    return recolectados==CAPACIDAD_ALCANCIA;
+    return recolectados&gt;=CAPACIDAD_ALCANCIA;
 }
 
 
@@ -114,14 +114,42 @@ bool puedeReponer(){
     }
 }
 
+bool TodoVendido(){
+    int i;
+    for(i=0;i&lt;N;i++){
+        if(bebidas[i].stock&gt;0){
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Negativo(int id){
+    return bebidas[id].stock&lt;0;
+}
+
+bool masQueMaximo(int id){
+    return bebidas[id].stock&gt;STOCK;
+}
+
+bool dentroDeLimites(){
+    int i;
+    for(i=0;i&lt;N;i++){
+        if(Negativo(i) or masQueMaximo(i)){
+            return false;
+        }
+    }
+    return true;
+}
+
 </declaration>
 		<location id="id0" x="-748" y="-34">
 			<name x="-799" y="-42">Libre</name>
 			<urgent/>
 		</location>
 		<location id="id1" x="-272" y="-34">
-			<name x="-255" y="-42">Ocupada</name>
-			<label kind="invariant" x="-289" y="-25">x&lt;=tiempoAgotado</label>
+			<name x="-238" y="-42">Ocupada</name>
+			<label kind="invariant" x="-246" y="-25">x&lt;=tiempoAgotado</label>
 		</location>
 		<location id="id2" x="-544" y="136">
 			<name x="-578" y="144">Procesando</name>
@@ -149,7 +177,7 @@ bool puedeReponer(){
 			<target ref="id1"/>
 			<label kind="guard" x="-433" y="85">!hayStockDe(idBebida) or
 !cubrePrecio(idBebida)</label>
-			<label kind="synchronisation" x="-357" y="68">vuelve!</label>
+			<label kind="synchronisation" x="-357" y="68">compra!</label>
 			<label kind="assignment" x="-365" y="119">x=0</label>
 			<nail x="-476" y="102"/>
 			<nail x="-306" y="34"/>
@@ -167,6 +195,7 @@ x=0</label>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id2"/>
+			<label kind="guard" x="-518" y="0">x &lt; tiempoAgotado</label>
 			<label kind="synchronisation" x="-476" y="17">pide?</label>
 			<nail x="-340" y="0"/>
 			<nail x="-510" y="68"/>
@@ -304,10 +333,8 @@ void reponer(){
 	<system>system Maquina,Usuario,Auditor;</system>
 	<queries>
 		<query>
-			<formula>A[] (bebidas[0].stock&lt;=10 and bebidas[0].stock&gt;=0)</formula>
-			<comment>Esta pregunta verifica seguridad. Debido a que determinamos que el maximo stock de cualquier bebida es de 10 unidades, se intenta
-verificar que en todas las ejecuciones, no se de el caso de que el stock supere la cantidad maxima ni que se vaya debajo de la
-cantidad minima, que es 0.</comment>
+			<formula>A[] Maquina.dentroDeLimites()</formula>
+			<comment>Esta pregunta verifica seguridad. La funcion verifica que el stock de las diferentes botellas sea mayor o igual a 0 y menor o  igual que el maximo especificado</comment>
 		</query>
 		<query>
 			<formula>A[] cospelesIngresados &lt;= 5</formula>
@@ -315,14 +342,16 @@ cantidad minima, que es 0.</comment>
 Por lo tanto con esta pregunta se está intentado verificar tal restricción. Se busca que para todas las ejecuciones posibles, la cantidad de cospeles ingresados por un usuario no supere la cantidad de 5.</comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; recolectados == CAPACIDAD_ALCANCIA</formula>
+			<formula>E&lt;&gt; recolectados == CAPACIDAD_ALCANCIA + 4</formula>
 			<comment>Con esta consulta se verifica que en alguna ejecucion del modelo, se alcanza a recaudar la maxima cantidad de cospeles posible.</comment>
 		</query>
 		<query>
-			<formula>A[] recolectados &gt;= 0 and recolectados &lt;= 120</formula>
-			<comment>Teniendo en cuenta el valor de cada bebida y que el stock maximo es de 10 unidades por cada una, la máxima recaudacion que 
-se puede obtener es de 120 cospeles. Ademas nunca la recaudadación nunca puede ser menor que cero. Esto es lo que verifica esta
-consulta.</comment>
+			<formula>E&lt;&gt; recolectados == CAPACIDAD_ALCANCIA</formula>
+			<comment>Con esta consulta se verifica que en alguna ejecucion del modelo, se alcanza a recaudar la capacidad de cospeles de la alcancia.</comment>
+		</query>
+		<query>
+			<formula>A[] recolectados &gt;= 0 and recolectados &lt;= CAPACIDAD_ALCANCIA + 4</formula>
+			<comment>Con esta pregunta se busca verificar que el modelo se mantenga dentro de los valores esperados</comment>
 		</query>
 		<query>
 			<formula>A[] Maquina.x &lt;= tiempoAgotado</formula>
@@ -331,35 +360,22 @@ tiempo de espera se agota o antes, y por lo tanto, que el reloj alcance valores 
 actualizacion del valor del reloj en alguna transicion.</comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; (stockGaseosa==0 and stockCerveza ==0 and stockFernet==0)</formula>
+			<formula>E&lt;&gt; Maquina.TodoVendido()</formula>
 			<comment>Esta consulta chequea alcanzabilidad. En particular, se esta preguntando si en algun momento de la ejecucion se acaba el stock
 de todas las bebidas.</comment>
 		</query>
 		<query>
-			<formula>(stockGaseosa==0 and stockCerveza ==0 and stockFernet==0) --&gt; (stockGaseosa&gt;0 and stockCerveza&gt;0 and stockFernet&gt;0)</formula>
+			<formula>Maquina.TodoVendido() --&gt; !Maquina.TodoVendido()</formula>
 			<comment>Esta consulta verifica si cualquier camino que empieza en un estado en el que no hay stock de ninguno de los tres tipos de bebidas,
 alcanza un estado en el que hay stock de todas las bebidas. Es decir, siempre se repone el stock mediante el auditor.</comment>
 		</query>
 		<query>
-			<formula>Maquina.Libre --&gt; Maquina.Ocupada1</formula>
+			<formula>Maquina.Libre --&gt; Maquina.Ocupada</formula>
 			<comment>Se intenta chequear si la máquina está libre, siempre puede pasar a un estado ocupado. Es decir, nunca está libre indefinidamente.</comment>
 		</query>
 		<query>
-			<formula>Maquina.Ocupada1 --&gt; Maquina.Libre</formula>
-			<comment>Se intenta chequear que siempre que se ingresaron entre 1 y 2 cospeles, la máquina se liberó en algún momento.</comment>
-		</query>
-		<query>
-			<formula>Maquina.Ocupada2 --&gt; Maquina.Libre</formula>
-			<comment>Se intenta chequear que siempre que se ingresaron más de 3 cospeles, la máquina se liberó en algún momento.</comment>
-		</query>
-		<query>
-			<formula>A[] Maquina.Ocupada2 imply (cospelesIngresados&gt;=3 and cospelesIngresados&lt;=5)</formula>
-			<comment>Es similar a la consulta siguiente pero con la location Ocupada2. Esto tiene que ser verdadero por cómo se penso la solución.</comment>
-		</query>
-		<query>
-			<formula>A[] Maquina.Ocupada1 imply (cospelesIngresados==1 or cospelesIngresados==2)</formula>
-			<comment>Está consulta chequea seguridad. Se intenta ver que siempre que se la máquina esta en la location Ocupada1, 
-hay 1 o 2 cospeles ingresados. Esto debe ser verdadero por como se pensó la solución.</comment>
+			<formula>Maquina.Ocupada --&gt; (Maquina.Libre || Maquina.Procesando)</formula>
+			<comment>Se intenta chequear si la máquina está ocupada pasará a estar libre o bien procesando un pedido</comment>
 		</query>
 		<query>
 			<formula>A[] Maquina.Libre imply cospelesIngresados == 0</formula>
@@ -367,13 +383,11 @@ hay 1 o 2 cospeles ingresados. Esto debe ser verdadero por como se pensó la sol
 operación anterior.</comment>
 		</query>
 		<query>
-			<formula>A[] Maquina.x == tiempoAgotado imply cospelesIngresados&gt;=3</formula>
-			<comment>Esta consulta chequea seguridad. Se intenta ver que si para todas las ejecuciones el tiempo de espera se llega a agotar únicamente
- cuando hay 3 o más cospeles ingresados. Está consulta esta relacionada con que cuando hay 1 o 2 cospeles en la máquina no hay 
-restricción temporal.</comment>
+			<formula>A[] Maquina.x == tiempoAgotado imply cospelesIngresados&gt;=1</formula>
+			<comment>Esta consulta chequea seguridad. Se intenta ver que si para todas las ejecuciones el tiempo de espera se llega a agotar únicamente cuando hay 1 o más cospeles ingresados.</comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt; Maquina.x == tiempoAgotado and cospelesIngresados&gt;=3</formula>
+			<formula>E&lt;&gt; Maquina.x == tiempoAgotado and cospelesIngresados&gt;=1</formula>
 			<comment>Esta consulta chequea principalmente alcanzabilidad. Lo que intenta ver es que si en algún momento de la ejecución se ejecuta 
 la transición que cancela la operación porque agotó el tiempo de espera.</comment>
 		</query>
